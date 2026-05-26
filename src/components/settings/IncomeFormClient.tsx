@@ -5,11 +5,13 @@
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { incomeRepository } from '@/lib/db/repositories';
-import { incomeDraftSchema } from '@/types';
+import { incomeDraftSchema, INCOME_FREQUENCIES } from '@/types';
 import type { IncomeDraft } from '@/types';
 import { Field } from '@/components/ui/Field';
 import { Input } from '@/components/ui/Input';
+import { Select } from '@/components/ui/Select';
 import { Button } from '@/components/ui/button';
+import { INCOME_FREQUENCY_LABELS } from '@/components/settings/labels';
 
 type FormErrors = Partial<Record<keyof IncomeDraft | '_form', string>>;
 
@@ -24,6 +26,8 @@ export function IncomeFormClient({ mode, incomeId }: Props): React.JSX.Element {
   const [amount, setAmount] = useState('');
   const [payDay, setPayDay] = useState('');
   const [source, setSource] = useState('');
+  const [frequency, setFrequency] =
+    useState<IncomeDraft['frequency']>('monthly');
   const [errors, setErrors] = useState<FormErrors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -36,6 +40,7 @@ export function IncomeFormClient({ mode, incomeId }: Props): React.JSX.Element {
       setAmount(String(income.amount));
       setPayDay(String(income.payDay));
       setSource(income.source);
+      setFrequency(income.frequency);
     });
     return () => {
       cancelled = true;
@@ -51,6 +56,7 @@ export function IncomeFormClient({ mode, incomeId }: Props): React.JSX.Element {
       amount: parseInt(amount, 10),
       payDay: parseInt(payDay, 10),
       source: source.trim(),
+      frequency,
     };
 
     const result = incomeDraftSchema.safeParse(draft);
@@ -110,6 +116,24 @@ export function IncomeFormClient({ mode, incomeId }: Props): React.JSX.Element {
           onChange={(e) => setAmount(e.target.value)}
           aria-invalid={!!errors.amount}
         />
+      </Field>
+
+      {/* Frequency — 隔月（公的年金）対応 */}
+      <Field label="入金周期" htmlFor="income-frequency" error={errors.frequency} required>
+        <Select
+          id="income-frequency"
+          value={frequency}
+          onChange={(e) =>
+            setFrequency(e.target.value as IncomeDraft['frequency'])
+          }
+          aria-invalid={!!errors.frequency}
+        >
+          {INCOME_FREQUENCIES.map((freq) => (
+            <option key={freq} value={freq}>
+              {INCOME_FREQUENCY_LABELS[freq]}
+            </option>
+          ))}
+        </Select>
       </Field>
 
       {/* Pay day */}

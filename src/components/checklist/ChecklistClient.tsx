@@ -7,18 +7,20 @@ import React, { useCallback, useEffect, useState } from 'react';
 import {
   accountRepository,
   expenseRepository,
+  incomeRepository,
   monthlyTaskRepository,
 } from '@/lib/db/repositories';
 import {
-  filterExpensesForMonth,
-  summarizeAccount,
+  getAllocationPeriod,
+  hasBimonthlyIncome,
+  summarizeAccountFromTasks,
 } from '@/lib/calc';
 import { formatYen } from '@/lib/format';
 import { useUiStore } from '@/stores/uiStore';
 import { cn } from '@/lib/utils';
 import type { Account, Expense, MonthlyTask } from '@/types';
 import type { AccountSummary } from '@/lib/calc';
-import { CatFace } from '@/components/cat';
+import { CatPhoto } from '@/components/cat';
 import { ChecklistRow } from './ChecklistRow';
 import { CatToast } from './CatToast';
 
@@ -51,12 +53,10 @@ function sortByDueDay(tasks: MonthlyTask[], expenseMap: Map<string, Expense>): M
 
 function buildSummary(
   accountId: string,
-  expenses: Expense[],
   tasks: MonthlyTask[],
-  yearMonth: string,
 ): AccountSummary {
-  const expensesInMonth = filterExpensesForMonth(expenses, yearMonth);
-  return summarizeAccount(accountId, expensesInMonth, tasks);
+  // 必要額=予定合計 / 確保済=確保済みの実際額合計（差額補完済み）。
+  return summarizeAccountFromTasks(accountId, tasks);
 }
 
 export function ChecklistClient({ accountId }: Props): React.JSX.Element {
@@ -69,10 +69,10 @@ export function ChecklistClient({ accountId }: Props): React.JSX.Element {
 
     async function load() {
       try {
-        const [account, allExpenses, tasks] = await Promise.all([
+        const [account, allExpenses, incomes] = await Promise.all([
           accountRepository.findById(accountId),
           expenseRepository.listByAccount(accountId),
-          monthlyTaskRepository.listByYearMonthAccount(yearMonth, accountId),
+          incomeRepository.list(),
         ]);
 
         if (cancelled) return;
@@ -82,8 +82,18 @@ export function ChecklistClient({ accountId }: Props): React.JSX.Element {
           return;
         }
 
+        // 隔月収入なら期間（2 ヶ月）分のタスクをこの口座について読む。
+        const period = getAllocationPeriod(yearMonth, hasBimonthlyIncome(incomes));
+        const tasksByMonth = await Promise.all(
+          period.periodMonths.map((m) =>
+            monthlyTaskRepository.listByYearMonthAccount(m, accountId),
+          ),
+        );
+        if (cancelled) return;
+        const tasks = tasksByMonth.flat();
+
         const expenseMap = new Map(allExpenses.map((e) => [e.id, e]));
-        const summary = buildSummary(accountId, allExpenses, tasks, yearMonth);
+        const summary = buildSummary(accountId, tasks);
 
         setState({
           phase: 'ready',
@@ -122,8 +132,7 @@ export function ChecklistClient({ accountId }: Props): React.JSX.Element {
           : t,
       );
 
-      const allExpenses = Array.from(data.expenseMap.values());
-      const newSummary = buildSummary(accountId, allExpenses, updated, yearMonth);
+      const newSummary = buildSummary(accountId, updated);
 
       setState({
         phase: 'ready',
@@ -144,7 +153,7 @@ export function ChecklistClient({ accountId }: Props): React.JSX.Element {
         }
       } catch (err) {
         // Rollback: restore previous tasks and summary on DB failure
-        const rolledBackSummary = buildSummary(accountId, allExpenses, original, yearMonth);
+        const rolledBackSummary = buildSummary(accountId, original);
         setState({
           phase: 'ready',
           data: { ...data, tasks: original, summary: rolledBackSummary },
@@ -153,7 +162,7 @@ export function ChecklistClient({ accountId }: Props): React.JSX.Element {
         console.error('[ChecklistClient] toggle failed, rolled back:', err);
       }
     },
-    [state, accountId, yearMonth],
+    [state, accountId],
   );
 
   const handleToastClose = useCallback(() => {
@@ -270,7 +279,7 @@ function LoadingView(): React.JSX.Element {
       aria-label="読み込み中"
       className="flex flex-col items-center gap-3 py-16 text-muted-foreground"
     >
-      <CatFace
+      <CatPhoto
         variant="neutral"
         className="size-12 text-brown animate-pulse motion-reduce:animate-none"
       />
@@ -285,7 +294,7 @@ function ErrorView({ message }: { message: string }): React.JSX.Element {
       role="alert"
       className="flex flex-col items-center gap-3 rounded-2xl bg-card px-5 py-8 text-center shadow-sm"
     >
-      <CatFace variant="worried" className="size-14 text-status-over" />
+      <CatPhoto variant="worried" className="size-14 text-status-over" />
       <p className="text-sm text-status-over">{message}</p>
       <button
         onClick={() => window.location.reload()}
@@ -300,7 +309,7 @@ function ErrorView({ message }: { message: string }): React.JSX.Element {
 function EmptyTasksView(): React.JSX.Element {
   return (
     <div className="flex flex-col items-center gap-3 rounded-2xl bg-card px-5 py-8 text-center shadow-sm">
-      <CatFace variant="neutral" className="size-12 text-brown" />
+      <CatPhoto variant="neutral" className="size-12 text-brown" />
       <p className="text-sm text-muted-foreground">この口座のタスクはまだありません</p>
     </div>
   );
@@ -310,7 +319,7 @@ function AllDoneView(): React.JSX.Element {
   return (
     <div className="mt-6 flex flex-col items-center gap-3 rounded-2xl bg-card px-5 py-8 text-center shadow-sm">
       {/* Cat curled up / sleeping to represent completion (PROJECTSPEC §9) */}
-      <CatFace variant="smile" className="size-16 text-brown" />
+      <CatPhoto variant="smile" className="size-16 text-brown" />
       <p className="font-semibold text-foreground">今月の振り分けはおわり</p>
       <p className="text-sm text-muted-foreground">すべての振り分けが完了しました</p>
     </div>

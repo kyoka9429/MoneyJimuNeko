@@ -8,6 +8,7 @@ const makeIncome = (id: string, amount: number): Income => ({
   amount,
   payDay: 25,
   source: 'salary',
+  frequency: 'monthly',
 });
 
 const makeExpense = (id: string, amount: number): Expense => ({

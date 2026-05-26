@@ -1,2 +1,2 @@
-export { CatFace } from './CatFace';
-export type { CatVariant } from './CatFace';
+export { CatPhoto } from './CatPhoto';
+export type { CatVariant, CatCharacter } from './CatPhoto';

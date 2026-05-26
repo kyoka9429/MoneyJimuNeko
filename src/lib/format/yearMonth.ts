@@ -18,3 +18,32 @@ export function formatYearMonthJa(yearMonth: string): string {
   const month = Number(yearMonth.slice(5, 7));
   return `${year} 年 ${month} 月`;
 }
+
+function assertValidYearMonth(yearMonth: string): void {
+  if (!isValidYearMonth(yearMonth)) {
+    throw new Error(`Invalid yearMonth format: "${yearMonth}". Expected YYYY-MM.`);
+  }
+}
+
+// 月番号 (1〜12) を返す。
+export function monthNumber(yearMonth: string): number {
+  assertValidYearMonth(yearMonth);
+  return Number(yearMonth.slice(5, 7));
+}
+
+// 偶数月（公的年金の入金月／隔月支出の発生月）かどうか。
+export function isEvenMonth(yearMonth: string): boolean {
+  return monthNumber(yearMonth) % 2 === 0;
+}
+
+// yearMonth に n ヶ月（負値可）を加算した YYYY-MM を返す。年跨ぎを正しく処理する。
+export function addMonths(yearMonth: string, n: number): string {
+  assertValidYearMonth(yearMonth);
+  const year = Number(yearMonth.slice(0, 4));
+  const month = Number(yearMonth.slice(5, 7));
+  // 0-indexed の月通算値で計算してから戻す（負の剰余を避けるため正規化）。
+  const totalMonths = year * 12 + (month - 1) + n;
+  const newYear = Math.floor(totalMonths / 12);
+  const newMonth = totalMonths - newYear * 12 + 1;
+  return `${String(newYear).padStart(4, '0')}-${String(newMonth).padStart(2, '0')}`;
+}

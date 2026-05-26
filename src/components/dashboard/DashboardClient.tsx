@@ -8,24 +8,32 @@ import {
   accountRepository,
   expenseRepository,
   incomeRepository,
+  monthlyIncomeRepository,
   monthlyTaskRepository,
 } from '@/lib/db/repositories';
 import {
-  calcMonthlyRemaining,
-  filterExpensesForMonth,
+  calcReconciledRemaining,
+  generateMonthlyIncomeDrafts,
   generateMonthlyTaskDrafts,
-  summarizeAccount,
+  getAllocationPeriod,
+  hasBimonthlyIncome,
+  summarizeAccountFromTasks,
 } from '@/lib/calc';
 import { useUiStore } from '@/stores/uiStore';
-import type { Account, MonthlyTask } from '@/types';
-import type { AccountSummary, MonthlyRemaining } from '@/lib/calc';
+import type { Account } from '@/types';
+import type {
+  AccountSummary,
+  AllocationPeriod,
+  MonthlyRemaining,
+} from '@/lib/calc';
 import { RemainingHero } from './RemainingHero';
 import { AccountCard } from './AccountCard';
-import { CatFace } from '@/components/cat';
+import { CatPhoto } from '@/components/cat';
 
 type DashboardData = {
   accounts: Account[];
   summaries: AccountSummary[];
+  period: AllocationPeriod;
   remaining: MonthlyRemaining;
 };
 
@@ -57,21 +65,45 @@ export function DashboardClient(): React.JSX.Element {
           return;
         }
 
-        // Ensure monthly task drafts exist for this month (rollover)
-        const drafts = generateMonthlyTaskDrafts(expenses, yearMonth);
-        await monthlyTaskRepository.ensureDraftsForMonth(yearMonth, drafts);
+        // 隔月収入対応: 振り分けは「期間」(偶数月＋翌奇数月) 単位。
+        // 期間内の支出タスク・入金月の収入レコードを用意してから実績補完で集計する。
+        const period = getAllocationPeriod(yearMonth, hasBimonthlyIncome(incomes));
 
+        await Promise.all([
+          ...period.periodMonths.map((m) =>
+            monthlyTaskRepository.ensureDraftsForMonth(
+              m,
+              generateMonthlyTaskDrafts(expenses, m),
+            ),
+          ),
+          monthlyIncomeRepository.ensureDraftsForMonth(
+            period.incomeMonth,
+            generateMonthlyIncomeDrafts(incomes, period.incomeMonth),
+          ),
+        ]);
         if (cancelled) return;
 
-        const tasks: MonthlyTask[] =
-          await monthlyTaskRepository.listByYearMonth(yearMonth);
-        const expensesInMonth = filterExpensesForMonth(expenses, yearMonth);
-        const remaining = calcMonthlyRemaining(incomes, expensesInMonth);
+        const tasksByMonth = await Promise.all(
+          period.periodMonths.map((m) =>
+            monthlyTaskRepository.listByYearMonth(m),
+          ),
+        );
+        const tasks = tasksByMonth.flat();
+        const monthlyIncomes = await monthlyIncomeRepository.listByYearMonth(
+          period.incomeMonth,
+        );
+        if (cancelled) return;
+
+        // 余りは予定→実際の差額を補完して算出。口座カードも期間タスクから集計。
+        const remaining = calcReconciledRemaining(monthlyIncomes, tasks);
         const summaries = accounts.map((acc) =>
-          summarizeAccount(acc.id, expensesInMonth, tasks),
+          summarizeAccountFromTasks(acc.id, tasks),
         );
 
-        setState({ phase: 'ready', data: { accounts, summaries, remaining } });
+        setState({
+          phase: 'ready',
+          data: { accounts, summaries, period, remaining },
+        });
       } catch (err) {
         if (cancelled) return;
         const message =
@@ -99,11 +131,16 @@ export function DashboardClient(): React.JSX.Element {
     return <EmptyView />;
   }
 
-  const { accounts, summaries, remaining } = state.data;
+  const { accounts, summaries, period, remaining } = state.data;
 
   return (
     <div className="flex flex-col gap-4">
-      <RemainingHero remaining={remaining} />
+      <RemainingHero
+        amount={remaining.remaining}
+        status={remaining.status}
+        isBimonthly={period.isBimonthly}
+        isIncomeMonth={period.isIncomeMonth}
+      />
 
       <section aria-label="口座カード一覧" className="flex flex-col gap-3">
         {accounts.map((account) => {
@@ -125,7 +162,7 @@ function LoadingView(): React.JSX.Element {
       aria-label="読み込み中"
       className="flex flex-col items-center gap-3 py-16 text-muted-foreground"
     >
-      <CatFace
+      <CatPhoto
         variant="neutral"
         className="size-12 text-brown animate-pulse motion-reduce:animate-none"
       />
@@ -140,7 +177,7 @@ function ErrorView({ message }: { message: string }): React.JSX.Element {
       role="alert"
       className="flex flex-col items-center gap-3 rounded-2xl bg-card px-5 py-8 text-center shadow-sm"
     >
-      <CatFace variant="worried" className="size-14 text-status-over" />
+      <CatPhoto variant="worried" className="size-14 text-status-over" />
       <p className="text-sm text-status-over">{message}</p>
       <button
         onClick={() => window.location.reload()}
@@ -155,7 +192,7 @@ function ErrorView({ message }: { message: string }): React.JSX.Element {
 function EmptyView(): React.JSX.Element {
   return (
     <div className="flex flex-col items-center gap-4 rounded-2xl bg-card px-5 py-10 text-center shadow-sm">
-      <CatFace variant="neutral" className="size-16 text-brown" />
+      <CatPhoto variant="neutral" className="size-16 text-brown" />
       <div className="flex flex-col gap-1">
         <p className="font-semibold text-foreground">まだ口座が登録されていません</p>
         <p className="text-sm text-muted-foreground">

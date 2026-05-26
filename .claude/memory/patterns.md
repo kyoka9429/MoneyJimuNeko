@@ -10,6 +10,9 @@
 - **`as const` 配列 → union 型 + ラベルマップ**: `EXPENSE_CATEGORIES = [...] as const` から `(typeof X)[number]` で型導出。日本語ラベルは `Record<X, string>` で別ファイル管理。drift 防止。
 - **純粋関数化してから Repository に組み込む**: ロールオーバー重複防止のような副作用混じりロジックも、`dedupeDraftsAgainstExisting(drafts, existing)` のような純粋関数を切り出せば Vitest 単体テスト可能。
 
+- **写真イラストの最適化は既存 Playwright で完結できる**: sharp 等のネイティブ依存を足さずとも、`chromium`（@playwright/test から import）で `<canvas>` に `drawImage` → `canvas.toDataURL('image/webp', q)` すれば PNG→WebP 縮小・変換できる。透過(alpha)も VP8X+ALPH で保持される。`scripts/optimize-cats.mjs` 参照。検証: `node -e` で WebP の VP8X flags byte(offset 20) bit 0x10 と ALPH チャンクを確認。
+- **画像は static import + `next/image` で basePath 安全**: `output:'export'` + `basePath` 環境では `public/` を `<img src="/...">` で参照すると basePath が付かず GitHub Pages 配下で 404。`import x from '@/assets/...webp'` の static import を `next/image` に渡すと assetPrefix/basePath が自動付与され content hash も付く。検証: `pnpm build` 後 `out/_next` 内の参照が `/<repo>/_next/static/media/*.webp` になっているか grep。`images.unoptimized:true` でも basePath 付与は効く。
+
 ## Anti-Patterns
 
 - **env フォールバックに `??` を使うと GitHub Actions の空 vars で壊れる**: GitHub Actions の `${{ vars.X }}` は未設定時に空文字列 `''` を渡す。`process.env.FOO ?? default` は `''` を弾かない（nullish のみ）ため、空文字列がそのまま採用される。`next.config.ts` の `basePath` でこれを踏み、本番ビルドで `basePath=''` → 全アセットが `/_next/...`（ルート参照）→ GitHub Pages 配下では 404 → **hydration 失敗（入力欄に打てるがボタン/トグルが無反応）**。対策: env フォールバックは `||` を使う。検証: `pnpm build` 後 `out/index.html` の `_next` パスに basePath が付いているか grep で確認。

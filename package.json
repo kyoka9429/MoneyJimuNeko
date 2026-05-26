@@ -12,7 +12,8 @@
     "test:unit": "vitest run",
     "test:e2e": "playwright test",
     "format": "prettier --write \"**/*.{ts,tsx,md,css,json}\" --ignore-path .gitignore",
-    "hash-password": "node scripts/hash-password.mjs"
+    "hash-password": "node scripts/hash-password.mjs",
+    "optimize-cats": "node scripts/optimize-cats.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.5.0",

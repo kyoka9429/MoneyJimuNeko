@@ -1,6 +1,11 @@
 // Japanese label mappings for domain constants.
 // Centralised here so all settings pages share the same translations.
-import type { AccountType, ExpenseCategory, ExpenseFrequency } from '@/types';
+import type {
+  AccountType,
+  ExpenseCategory,
+  ExpenseFrequency,
+  IncomeFrequency,
+} from '@/types';
 
 export const ACCOUNT_TYPE_LABELS: Record<AccountType, string> = {
   bank: '銀行',
@@ -22,6 +27,11 @@ export const EXPENSE_FREQUENCY_LABELS: Record<ExpenseFrequency, string> = {
   bimonthly: '隔月',
   quarterly: '四半期',
   yearly: '年次',
+};
+
+export const INCOME_FREQUENCY_LABELS: Record<IncomeFrequency, string> = {
+  monthly: '毎月',
+  bimonthly: '隔月（偶数月）',
 };
 
 // Color palette presets from PROJECTSPEC §6.2 for the color picker.
