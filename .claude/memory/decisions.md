@@ -1,7 +1,7 @@
 # Design Decisions — MoneyJimuNeko
 
 | Date | Decision | Rationale | Rejected Alternatives |
-|------|----------|-----------|----------------------|
+| ---- | -------- | --------- | --------------------- |
 | 2026-05-26 | Rule Factory v2 (full preset, claude-code target) を採用 | Claude Code + VSCode で開発するため、エージェント + hooks + MCP + Memory のフル装備が活きる | standard (specialist 抜き) / minimal (エージェントなし) |
 | 2026-05-26 | フロントエンド = Next.js 16 + TypeScript + Tailwind v4 + shadcn/ui | 短期間で完成度の高いスマホ UI を作れる。Vercel 即デプロイ可。当初 v15 を想定していたが Phase 0 着手時に `create-next-app@latest` が v16 を引いたため、破壊的変更の影響範囲（async params、middleware→proxy、キャッシュ刷新、`next lint` 撤廃）が本プロジェクト範囲では小さいことを確認のうえ v16 採用。 | v15 据え置き (新規 MVP なら最新が長持ち) / Vite + React (ルーティング・SSR を自前で持つコストが大きい) / SvelteKit (チームスキルから外れる) |
 | 2026-05-26 | データ永続化 = IndexedDB (Dexie) のみ | MVP は妻一人。サーバー / 認証コストをゼロに。ローカルファーストで動作。 | Supabase 即導入 (オーバーエンジニアリング) / localStorage (件数・型に難) |
@@ -11,3 +11,28 @@
 | 2026-05-26 | テスト基盤 = Vitest (unit) + Playwright (E2E) + happy-dom + testing-library | Vitest は Vite ベースで起動が高速、純粋関数の calc とコンポーネントの両方をカバー。Playwright は mobile-chrome/mobile-safari/desktop の 3 プロジェクトで主要動線を検証。 | Jest (Vite 連携でひと手間)、Cypress (E2E モバイル絵柄が弱め) |
 | 2026-05-26 | フォーマッタ = Prettier + prettier-plugin-tailwindcss | Tailwind クラス並びの自動整列で diff ノイズを抑制。`pnpm format` で一括適用。 | Biome (現時点で ESLint との競合多い)、フォーマッタ非導入 |
 | 2026-05-26 | shadcn/ui = defaults (Next.js テンプレ、neutral 基調)、`--src-dir` 構成、CSS variables | 後で PROJECTSPEC のクリーム/ブラウン/肉球ピンク配色に置き換える前提で、まず動く土台を確保。shadcn v4 系は `shadcn/tailwind.css` を npm パッケージ経由で読み込む仕様。 | カスタムテーマで初期化 (Phase 0 では過剰)、Radix UI 直接利用 (薄いラッパが欲しい) |
+| 2026-05-26 | ID は `crypto.randomUUID()` で string 採番（全エンティティ共通） | JSON エクスポート/インポート時の ID 衝突を防ぐ。将来 Supabase 同期に移行しても衝突を避けやすい。 | Dexie autoincrement number (将来 migration 必要), nanoid (ブラウザ標準で十分のため依存追加せず) |
+| 2026-05-26 | Settings は `userId='local-user'` を主キーとする singleton | 将来 multi-user 化に備え userId フィールドを残す（PROJECTSPEC §13）。MVP では固定値 1 レコード。 | 通常の id カラム + 別途 active flag 管理 (singleton 制約をコードで保証する必要があり面倒) |
+| 2026-05-26 | Zod + TypeScript 型を同居（`z.infer` で型導出）+ `as const` 配列 → union 型 | 値の追加時に union と Zod の同期を自動化。フォームバリデーションでも同じスキーマを再利用できる。 | enum 利用 (Zod 連携が不便)、型と Zod を別ファイル管理 (drift 発生しやすい) |
+| 2026-05-26 | Dexie インスタンスは `getDb()` 経由の遅延初期化、`typeof window === 'undefined'` で SSR ガード | Server Component から誤参照されたときに明示エラーで失敗させる（Fail loud）。テスト用 `resetDbForTesting()` も用意。 | モジュール top-level で `new MoneyJimuDB()` (SSR 時に IndexedDB が無いためビルド失敗の恐れ) |
+| 2026-05-26 | Repository 層で Expense/Account 削除時にカスケード削除（同一トランザクション） | MonthlyTask が孤児化すると集計ロジック（accountSummary など）が壊れる。Dexie の transaction で原子性を確保。 | DB 制約に任せる (IndexedDB に FK 制約はない)、UI 層で個別削除 (整合性責務の分散) |
+| 2026-05-26 | ロールオーバー二重実行の重複防止は純粋関数 `dedupeDraftsAgainstExisting` ＋ `monthlyTaskRepository.ensureDraftsForMonth` の二段構え | 純粋関数化することで Vitest だけで重複防止ロジックを検証可能。Repository 統合テスト基盤が無くてもカバー可能に。スキーマ v1 のユニーク制約は追加せず、将来必要なら migration で対応。 | スキーマに `&[yearMonth+expenseId]` ユニーク制約 (v1 確定済みのため migration コスト)、Repository 内に直接ロジック埋め込み (テスト不可能) |
+| 2026-05-26 | calc 層は完全純粋関数（Dexie 非依存）。月のフィルタは calc 側 (`filterExpensesForMonth`)、合計集計は呼び出し側でフィルタ済みデータを渡す前提 | テスト容易性を最優先。`prefers-reduced-motion` 等の UI 関心事から分離。 | calc 内で Repository を呼ぶ (副作用混入で Vitest 化が難しい) |
+| 2026-05-26 | `bimonthly` = 偶数月、`yearly` = 1 月（暫定実装） | PROJECTSPEC §5.4 に発生月の定義がない。MVP 動作のためデフォルトを置く。expense に `startMonth`/`baseMonth` を追加する仕様確定が出れば実装変更。 | 月ごとの dueDay と yearMonth から推測 (仕様未確定で過剰実装)、bimonthly/yearly を一旦未対応 (UI で隠す手間が増える) |
+| 2026-05-26 | ねこ SVG は 8bit ドット風（ユーザー選択）。`viewBox="0 0 16 16"` + `<rect>` + `shape-rendering="crispEdges"`、3 表情は eyes/mouth の rect 差替えで実現 | アニメ無しでも個性が出る、ファイルサイズ最小、`currentColor` で親要素から色制御可能 | 線画ミニマル (情報量薄め)、水彩風 (SVG 表現コスト大) |
+| 2026-05-26 | Server Component shell + `*Client.tsx` での境界設計（IndexedDB アクセスは全て Client） | SSR で IndexedDB 不在のためビルド/初回レンダで暴発しない。CLAUDE.md「'use client' は必要最小限」に準拠 | Dynamic imports で client 強制 (構造が分かりにくい)、`use client` をページ全体に (Server Component の利点放棄) |
+| 2026-05-26 | 4状態管理パターン: `loading` / `empty` / `error` / `ready` を judiciously 分けて UI 表示 | データ取得失敗時に空ページにならず、ユーザーに状態が伝わる（Fail loud） | loading のみで他は無視 (ユーザーが混乱)、try/catch を握りつぶす |
+| 2026-05-26 | 楽観的更新 + ロールバック（ChecklistClient のトグル、SettingsClient の更新） | UI 応答速度を最優先。DB 失敗時は元の state に戻して整合性を維持 | 同期型（DB→state）でローディング表示 (タップごとに待たされる)、失敗時の処理を省略 (state と DB の乖離) |
+| 2026-05-26 | `reloadKey` カウンタによる再フェッチパターン（List 系コンポーネント全般） | `useCallback` での依存配列罠を避けつつ、削除/追加後の再取得を強制できる | mutation 後の手動 setState 反映 (フィルタや派生データの再計算漏れリスク) |
+| 2026-05-26 | フォーム useEffect には必ず `cancelled` flag を入れる | unmount 後の setState 警告と無駄な処理を防ぐ。code-reviewer の high 指摘から判明 | flag なし (高速ブラウザバックで警告)、AbortController (Dexie が AbortSignal 非対応) |
+| 2026-05-26 | JSON バックアップは「純粋関数（`buildBackupPayload` / `parseBackup`）+ 副作用関数（`downloadBackup` / `replaceAllFromBackup`）」の二層構造 | コアロジックを Vitest でテスト可能に保つ。ブラウザ I/O やトランザクションはランタイムでだけ動かす。 | 全部を 1 関数にまとめる (テスト不能)、各テーブル個別の export/import 関数 (DRY 違反) |
+| 2026-05-26 | Dexie の transaction 引数は配列形式 `transaction('rw', [t1, t2, ...], cb)` を使う | 個別引数版は最大 5 テーブル制限あり、テーブル数が多いとビルドエラー（TS2554）。配列版は無制限。 | 個別引数（テーブル数の上限で破綻） |
+| 2026-05-26 | Dexie schema は v2 に上げて `incomes.payDay` と `expenses.name` を追加インデックス化 | Phase 1 で `repositories.list()` が `orderBy('payDay')` / `orderBy('name')` を呼ぶがインデックスが無く、E2E で SchemaError として顕在化。Dexie の `version(2).stores(...)` を併記して自動 migration。 | スキーマ書き換えのみ (既存ユーザーのデータ消失)、orderBy を変える (UX 劣化) |
+| 2026-05-26 | CatFace の a11y: `label` prop 指定時に `role="img" + aria-label`、未指定時は `aria-hidden` | `aria-hidden=true` を直接ハードコードしていた元実装はロゴ用途で意味が出ない問題（code-reviewer 指摘）。prop 1 つで両用途を切り替える。 | `aria-label` を直接受ける (JSX で kebab-case prop が扱いにくい)、別コンポーネント分割 (重複コード) |
+| 2026-05-26 | E2E テストは mobile-chrome project でのみ走らせる方針 | Pixel 7 viewport で MVP の主要動線をカバーすれば十分。webServer (`pnpm dev`) 起動コストを 3 倍に増やすと CI が重くなる。mobile-safari / desktop は破壊的 UI 変更時にスポットで実行。 | 全 3 project で常時実行 (10〜15s × 3 = 重い)、project 削減 (PROJECTSPEC §10 ブラウザサポート目標から後退) |
+| 2026-05-27 | デプロイ先 = GitHub Pages（Vercel 不採用） | ユーザー判断。完全静的ホスティングと相性が良いほどクライアント完結アプリ。無料、独自ドメイン対応可。 | Vercel (Next.js 親和は高いが今回は静的 export で十分)、Cloudflare Pages (機能十分だが GitHub Actions との結線が増える) |
+| 2026-05-27 | 動的セグメント全廃 → クエリ文字列ベース (`/account?id=...`) | `output: 'export'` で `[id]` を扱うには `generateStaticParams` が必要。IndexedDB に id を持つ設計と相性が悪い。Suspense + useSearchParams で全 page を `'use client'` 化することで build 時パス列挙不要に。 | `generateStaticParams` で疑似空配列 + `dynamicParams: false` (ホスト時 404)、hash ルーター自作 (Next.js Router を捨てる過剰反応) |
+| 2026-05-27 | パスワードガードは PBKDF2-SHA256 100,000 iterations のハッシュ比較。salt はビルド時固定の env var | ソース閲覧で平文パスワードが露出しない。100k 反復で brute force コストを引き上げる。家計アプリで「一般ユーザー弾き」目的の古典的ガード。Supabase Auth 移行（v0.3）まで暫定。 | 平文比較 (ソースで丸見え)、bcrypt (WebCrypto 標準にないため依存追加)、AES でアプリ全体暗号化 (実装コストが目的に対して過剰) |
+| 2026-05-27 | unlock 状態は React state のみ（永続化なし）= 毎回認証 | ユーザー選択。リロード/タブ閉じで必ず再入力。「他人がたまたま同じブラウザを開いた」リスクを最小化。 | localStorage 永続 (UX 良いが共有 PC で危ない)、sessionStorage (タブ閉じまで、現実的だが state よりやや弱い保証) |
+| 2026-05-27 | LockGate は env 未設定で認証スキップ（fail-open in dev / fail-closed in prod） | ローカル開発で .env.local を毎回作るコストを避ける。GitHub Actions では Repository Secrets を必ず渡す前提なので、誤って未設定で本番デプロイされても hash 不一致で全員拒否される（fail-closed 相当）。 | dev でもデフォルトパスワード強制 (実装コスト)、env 未設定で build error (CI が止まる) |
+| 2026-05-27 | `basePath` を env var で切替可能に: `NEXT_PUBLIC_BASE_PATH` 優先、未設定なら prod でデフォルト `/MoneyJimuNeko` | リポジトリ名変更や独自ドメイン採用に対応するための柔軟性。dev では空のままで localhost 動作維持。 | basePath をハードコード (環境ごとに分岐困難)、`<base>` タグ手書き (Next.js Router の挙動と衝突) |
