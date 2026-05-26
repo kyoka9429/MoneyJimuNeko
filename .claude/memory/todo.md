@@ -107,12 +107,18 @@
 - [x] E2E を trailingSlash + クエリルートに適合
 - 検証: typecheck/lint/test:unit (95件)/build (14 ルート全て静的)/e2e (4/4 pass) すべて緑
 
+### Phase 4 デプロイ ✅ COMPLETED (2026-05-27)
+
+- [x] GitHub リポジトリ作成（public、`gh repo create`、push 時 workflow scope 追加が必要だった）
+- [x] GitHub Actions secrets 登録: `AUTH_HASH` `AUTH_SALT`（ユーザーが手元で設定）
+- [x] GitHub Pages 設定（Source = GitHub Actions）
+- [x] デプロイ成功（build+deploy 両ジョブ緑）。本番でパスワードガード動作確認済み（合言葉画面表示）
+
 ### Phase 4 残課題
 
-- [ ] GitHub Actions secrets を登録: `AUTH_HASH` `AUTH_SALT`、vars `BASE_PATH` （リポジトリ名と異なる場合のみ）
-- [ ] GitHub Pages 設定（リポジトリの Settings → Pages → Source = GitHub Actions）
 - [ ] 独自ドメインを使う場合は `public/CNAME` + `BASE_PATH=''` に上書き
 - [ ] README に「設定→デプロイ手順」セクションを追記（hash-password.mjs の使い方、secrets の入れ方）
+- [ ] deploy.yml の Node.js 20 → 24 移行（GitHub Actions が 2026-06-02 以降 Node24 を強制。setup-node の node-version: 20 を 24 へ）
 
 ## Context for Next Session
 
