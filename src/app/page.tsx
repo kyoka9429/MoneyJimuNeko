@@ -1,10 +1,15 @@
-export default function Home() {
+// Server Component — data fetching is delegated to DashboardClient
+// which accesses IndexedDB (Dexie) on the client side.
+import { DashboardClient } from '@/components/dashboard/DashboardClient';
+import { DashboardHeader } from '@/components/dashboard/DashboardHeader';
+
+export default function HomePage() {
   return (
-    <main className="flex flex-1 flex-col items-center justify-center gap-4 px-6 py-12 text-center">
-      <h1 className="text-3xl font-bold tracking-tight">MoneyJimuNeko</h1>
-      <p className="text-muted-foreground max-w-sm text-balance">
-        ようこそ。ここに「今月のあと余り」と口座カードが並びます。実装はこれから。
-      </p>
-    </main>
+    <>
+      <DashboardHeader />
+      <main className="flex-1 px-4 pb-4">
+        <DashboardClient />
+      </main>
+    </>
   );
 }

@@ -7,6 +7,12 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-cream: var(--cream);
+  --color-brown: var(--brown);
+  --color-paw-pink: var(--paw-pink);
+  --color-status-comfortable: var(--status-comfortable);
+  --color-status-tight: var(--status-tight);
+  --color-status-over: var(--status-over);
   --font-sans: var(--font-sans);
   --font-mono: var(--font-geist-mono);
   --font-heading: var(--font-sans);
@@ -49,24 +55,33 @@
 }
 
 :root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
+  /* PROJECTSPEC §6.2 カラーパレット */
+  --cream: #fff8f1;
+  --brown: #2e2a26;
+  --paw-pink: #f4a6a6;
+  --status-comfortable: #7fb77e;
+  --status-tight: #e6b450;
+  --status-over: #d26b6b;
+
+  /* shadcn variables（PROJECTSPEC のパレットに揃える） */
+  --background: var(--cream);
+  --foreground: var(--brown);
+  --card: #ffffff;
+  --card-foreground: var(--brown);
+  --popover: #ffffff;
+  --popover-foreground: var(--brown);
+  --primary: var(--paw-pink);
+  --primary-foreground: var(--brown);
+  --secondary: #f4ece2;
+  --secondary-foreground: var(--brown);
+  --muted: #f4ece2;
+  --muted-foreground: #7a7068;
+  --accent: var(--paw-pink);
+  --accent-foreground: var(--brown);
+  --destructive: var(--status-over);
+  --border: #e9dccb;
+  --input: #e9dccb;
+  --ring: var(--paw-pink);
   --chart-1: oklch(0.87 0 0);
   --chart-2: oklch(0.556 0 0);
   --chart-3: oklch(0.439 0 0);
