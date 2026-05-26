@@ -16,6 +16,13 @@ concurrency:
   group: pages
   cancel-in-progress: false
 
+# JS アクション（checkout / setup-node / pages 系 / pnpm）を Node 24 で実行する。
+# 2026-06-02 以降は GitHub が Node 24 を強制するため、それより前に opt-in して
+# 互換性を検証し、Node 20 非推奨の警告も解消する。Pages 系アクションには
+# Node24 ネイティブの新メジャーがまだ無いため、この公式 env で前倒し対応する。
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -28,7 +35,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 24
           cache: pnpm
 
       - run: pnpm install --frozen-lockfile
