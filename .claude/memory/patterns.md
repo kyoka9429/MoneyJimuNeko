@@ -12,7 +12,8 @@
 
 ## Anti-Patterns
 
-- (セッション中に追記)
+- **env フォールバックに `??` を使うと GitHub Actions の空 vars で壊れる**: GitHub Actions の `${{ vars.X }}` は未設定時に空文字列 `''` を渡す。`process.env.FOO ?? default` は `''` を弾かない（nullish のみ）ため、空文字列がそのまま採用される。`next.config.ts` の `basePath` でこれを踏み、本番ビルドで `basePath=''` → 全アセットが `/_next/...`（ルート参照）→ GitHub Pages 配下では 404 → **hydration 失敗（入力欄に打てるがボタン/トグルが無反応）**。対策: env フォールバックは `||` を使う。検証: `pnpm build` 後 `out/index.html` の `_next` パスに basePath が付いているか grep で確認。
+- **hydration 失敗の見分け方**: 「静的 HTML は表示されるが、入力欄に文字は打てるのにボタンやトグルが一切反応しない」= JS が動いていないサイン。まず本番 HTML の `<script src>` パスが 404 になっていないか（basePath ズレ）を疑う。
 
 ## Recurring Issues → Rule Candidates
 
