@@ -1,0 +1,73 @@
+{
+
+  "hooks": {
+
+    "SessionStart": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cat .claude/memory/todo.md 2>/dev/null && echo '---' && cat .claude/memory/decisions.md 2>/dev/null || echo 'No previous session memory found.'"
+          }
+        ]
+      }
+    ],
+
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "if printf '%s\\n' \"$TOOL_INPUT\" | grep -qF 'git push'; then echo '[REMINDER] git push を実行します。ブランチとリモートを確認してください。'; fi"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "if printf '%s\\n' \"$TOOL_INPUT\" | grep -qF 'rm -rf /' || printf '%s\\n' \"$TOOL_INPUT\" | grep -qF 'sudo ' || printf '%s\\n' \"$TOOL_INPUT\" | grep -qE 'curl.*\\|.*bash' || printf '%s\\n' \"$TOOL_INPUT\" | grep -qE 'wget.*\\|.*bash'; then echo 'BLOCK: 危険なコマンドの実行はブロックされました。' && exit 2; fi"
+          }
+        ]
+      }
+    ],
+
+    "PostToolUse": [
+      {
+        "_warning": "LINT_COMMAND は信頼できるコマンドのみを指定してください",
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "command -v {{LINT_COMMAND%% *}} >/dev/null 2>&1 && pnpm lint --quiet 2>/dev/null || true"
+          }
+        ]
+      },
+      {
+        "_warning": "TYPECHECK_COMMAND は信頼できるコマンドのみを指定してください",
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "command -v {{TYPECHECK_COMMAND%% *}} >/dev/null 2>&1 && pnpm typecheck --noEmit 2>/dev/null || true"
+          }
+        ]
+      }
+    ],
+
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "mkdir -p .claude/memory && date '+%Y-%m-%d %H:%M' >> .claude/memory/sessions.log && echo 'Session ended. Memory checkpoint saved.'"
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "sequential-thinking": {
+      "command": "npx",
+      "args": ["-y", "@anthropic/sequential-thinking-mcp"],
+      "enabled": true
+    },
+    "context7": {
+      "command": "npx",
+      "args": ["-y", "@anthropic/context7-mcp"],
+      "enabled": true
+    }
+  }
+}
