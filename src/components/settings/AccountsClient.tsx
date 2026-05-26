@@ -9,7 +9,7 @@ import { accountRepository } from '@/lib/db/repositories';
 import type { Account } from '@/types';
 import { ACCOUNT_TYPE_LABELS } from '@/components/settings/labels';
 import { cn } from '@/lib/utils';
-import { CatFace } from '@/components/cat';
+import { CatPhoto } from '@/components/cat';
 
 export function AccountsClient(): React.JSX.Element {
   const [accounts, setAccounts] = useState<Account[]>([]);
@@ -136,7 +136,7 @@ function LoadingView(): React.JSX.Element {
       aria-label="読み込み中"
       className="flex flex-col items-center gap-3 py-16 text-muted-foreground"
     >
-      <CatFace
+      <CatPhoto
         variant="neutral"
         className="size-12 text-brown animate-pulse motion-reduce:animate-none"
       />
@@ -148,7 +148,7 @@ function LoadingView(): React.JSX.Element {
 function EmptyView(): React.JSX.Element {
   return (
     <div className="flex flex-col items-center gap-3 rounded-2xl bg-card px-5 py-8 text-center shadow-sm">
-      <CatFace variant="neutral" className="size-12 text-brown" />
+      <CatPhoto variant="neutral" className="size-12 text-brown" />
       <p className="text-sm text-muted-foreground">口座がまだ登録されていません</p>
     </div>
   );

@@ -13,7 +13,7 @@ import {
   EXPENSE_FREQUENCY_LABELS,
 } from '@/components/settings/labels';
 import { cn } from '@/lib/utils';
-import { CatFace } from '@/components/cat';
+import { CatPhoto } from '@/components/cat';
 
 export function ExpensesClient(): React.JSX.Element {
   const [expenses, setExpenses] = useState<Expense[]>([]);
@@ -152,7 +152,7 @@ function LoadingView(): React.JSX.Element {
       aria-label="読み込み中"
       className="flex flex-col items-center gap-3 py-16 text-muted-foreground"
     >
-      <CatFace
+      <CatPhoto
         variant="neutral"
         className="size-12 text-brown animate-pulse motion-reduce:animate-none"
       />
@@ -164,7 +164,7 @@ function LoadingView(): React.JSX.Element {
 function EmptyView(): React.JSX.Element {
   return (
     <div className="flex flex-col items-center gap-3 rounded-2xl bg-card px-5 py-8 text-center shadow-sm">
-      <CatFace variant="neutral" className="size-12 text-brown" />
+      <CatPhoto variant="neutral" className="size-12 text-brown" />
       <p className="text-sm text-muted-foreground">支出項目がまだ登録されていません</p>
     </div>
   );
@@ -173,7 +173,7 @@ function EmptyView(): React.JSX.Element {
 function NoAccountView(): React.JSX.Element {
   return (
     <div className="flex flex-col items-center gap-4 rounded-2xl bg-card px-5 py-10 text-center shadow-sm">
-      <CatFace variant="worried" className="size-14 text-status-tight" />
+      <CatPhoto variant="worried" className="size-14 text-status-tight" />
       <div className="flex flex-col gap-1">
         <p className="font-semibold text-foreground">口座が登録されていません</p>
         <p className="text-sm text-muted-foreground">

@@ -7,7 +7,7 @@ import { Eye, EyeOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Field } from '@/components/ui/Field';
 import { Input } from '@/components/ui/Input';
-import { CatFace } from '@/components/cat';
+import { CatPhoto } from '@/components/cat';
 
 type Props = {
   onUnlock: () => void;
@@ -47,10 +47,12 @@ export function LockScreen({ onUnlock, verify }: Props): React.JSX.Element {
       className="flex flex-1 flex-col items-center justify-center px-6 py-12"
     >
       <div className="flex w-full max-w-sm flex-col items-center gap-6">
-        <CatFace
+        <CatPhoto
+          character="jimu"
           variant={error ? 'worried' : 'neutral'}
-          className="size-24 text-brown"
-          label="MoneyJimuNeko"
+          className="size-24"
+          alt="MoneyJimuNeko"
+          priority
         />
 
         <div className="flex flex-col items-center gap-1 text-center">

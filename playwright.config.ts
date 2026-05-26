@@ -31,5 +31,13 @@ export default defineConfig({
     reuseExistingServer: !process.env.CI,
     stdout: 'pipe',
     stderr: 'pipe',
+    // ローカルの .env.local に本番用の合言葉ハッシュが入っていると LockGate が
+    // 全画面を覆い E2E が進めない。Next.js は process.env を .env.local より
+    // 優先するため、ここで空文字を渡してテスト中だけ認証をスキップさせる
+    // （isAuthConfigured() が false になる）。本番は GitHub Actions が実 env を渡す。
+    env: {
+      NEXT_PUBLIC_AUTH_HASH: '',
+      NEXT_PUBLIC_AUTH_SALT: '',
+    },
   },
 });

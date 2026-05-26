@@ -44,3 +44,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# 猫イラストの原本（トレースSVG / 元PNG）。リポジトリ肥大を避けるためローカル保管。
+# アプリは最適化済みの src/assets/cats/*.webp を使う（scripts/optimize-cats.mjs で再生成）。
+/image/

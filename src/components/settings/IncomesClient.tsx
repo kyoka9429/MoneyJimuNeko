@@ -9,7 +9,8 @@ import { incomeRepository } from '@/lib/db/repositories';
 import type { Income } from '@/types';
 import { formatYen } from '@/lib/format';
 import { cn } from '@/lib/utils';
-import { CatFace } from '@/components/cat';
+import { CatPhoto } from '@/components/cat';
+import { INCOME_FREQUENCY_LABELS } from '@/components/settings/labels';
 
 export function IncomesClient(): React.JSX.Element {
   const [incomes, setIncomes] = useState<Income[]>([]);
@@ -94,7 +95,8 @@ function IncomeRow({ income, onDelete }: IncomeRowProps): React.JSX.Element {
       <div className="flex flex-1 flex-col gap-0.5 min-w-0">
         <span className="truncate font-semibold text-foreground">{income.name}</span>
         <span className="text-xs text-muted-foreground">
-          {income.source} · 毎月 {income.payDay} 日
+          {income.source} · {INCOME_FREQUENCY_LABELS[income.frequency]}{' '}
+          {income.payDay} 日
         </span>
       </div>
 
@@ -131,7 +133,7 @@ function LoadingView(): React.JSX.Element {
       aria-label="読み込み中"
       className="flex flex-col items-center gap-3 py-16 text-muted-foreground"
     >
-      <CatFace
+      <CatPhoto
         variant="neutral"
         className="size-12 text-brown animate-pulse motion-reduce:animate-none"
       />
@@ -143,7 +145,7 @@ function LoadingView(): React.JSX.Element {
 function EmptyView(): React.JSX.Element {
   return (
     <div className="flex flex-col items-center gap-3 rounded-2xl bg-card px-5 py-8 text-center shadow-sm">
-      <CatFace variant="neutral" className="size-12 text-brown" />
+      <CatPhoto variant="neutral" className="size-12 text-brown" />
       <p className="text-sm text-muted-foreground">収入項目がまだ登録されていません</p>
     </div>
   );

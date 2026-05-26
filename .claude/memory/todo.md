@@ -1,5 +1,22 @@
 # Session Handoff — MoneyJimuNeko
 
+## Latest Session (2026-05-27) — v0.2 実使用ブラッシュアップ
+
+MVP 動作確認後、実使用に向けた 3 機能を実装。全フェーズ検証グリーン
+（typecheck / lint / test:unit **137** / build 14ルート静的 / e2e 4/4 mobile-chrome）。
+
+- **Phase 1 隔月収入対応**: `Income.frequency`(monthly/bimonthly, Dexie v3 migration) + `calc/allocationView`（2ヶ月期間集計, 偶数月=入金月）。`DashboardClient` の「全収入を毎月二重計上」バグも解消。ヒーローは隔月世帯で「この2ヶ月のあと余り」表示。
+- **Phase 2 予定/実際ヒアリング + 2ヶ月まとめ振り分け**: `MonthlyIncome` 新設 + Dexie v4。`/allocate` を 2 ステップウィザード化（STEP1 予定→STEP2 実際+確保）。`calc/reconcile`（`effectiveAmount`/`calcReconciledRemaining`/`summarizeAccountFromTasks`）で差額を余りに自動補完。`ChecklistClient` も期間対応。
+- **Phase 3 猫リデザイン**: ユーザー提供の写真PNG6枚を `scripts/optimize-cats.mjs`(Playwright) で 512px WebP 化（3.7MB→111KB, 透過保持）。`CatPhoto`(static import + next/image, basePath安全) でドット絵 `CatFace` を全廃。事務猫=ロゴ/ヒーロー/一般、作業猫=振り分け相棒/完了。スクショで描画確認済み。
+- **E2E**: `playwright.config.ts` webServer に空 auth env を渡し LockGate をスキップ（`.env.local` は不変更）。
+
+### 残課題 / フォローアップ
+
+- [ ] 2ステップウィザード（隔月・予定/実際）の E2E スモークが未整備（unit は calc を網羅）。偶数月での「2ヶ月まとめ表示」動線テストを追加したい。
+- [ ] `calc/monthlyRemaining`(`calcMonthlyRemaining`/`MonthlyRemaining`) は現在 UI 非使用（reconcile に移行）。テスト用に残置。将来削除可否を判断。
+- [ ] ヒーローの偶数月（入金月）表示は未スクショ確認（奇数月のみ確認済み）。実機の偶数月で「今月＋翌月の2ヶ月分」ラベルを目視したい。
+- [ ] 元 image/*.svg（8〜10MB トレース）と元 PNG は最適化後 `src/assets/cats/*.webp` に置換済み。`image/` の原本を保管するか .gitignore するか要判断（リポジトリ肥大）。
+
 ## Last Session
 
 - Date: 2026-05-26

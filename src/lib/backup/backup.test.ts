@@ -36,6 +36,7 @@ const income: Income = {
   amount: 280000,
   payDay: 25,
   source: '給与',
+  frequency: 'monthly',
 };
 
 const task: MonthlyTask = {

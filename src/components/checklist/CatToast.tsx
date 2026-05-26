@@ -6,7 +6,7 @@
 // prefers-reduced-motion: bounce is suppressed via motion-reduce:animate-none.
 import React, { useEffect, useRef } from 'react';
 import { cn } from '@/lib/utils';
-import { CatFace } from '@/components/cat';
+import { CatPhoto } from '@/components/cat';
 
 type Props = {
   open: boolean;
@@ -71,7 +71,7 @@ export function CatToast({ open, onClose }: Props): React.JSX.Element | null {
         'animate-in fade-in duration-200',
       )}
     >
-      <CatFace
+      <CatPhoto
         variant="smile"
         className="size-6 text-brown"
       />
