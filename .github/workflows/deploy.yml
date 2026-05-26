@@ -1,0 +1,64 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# Pages deployment に必要な権限
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# 同時実行: 同じデプロイは 1 つに絞る（古いビルドが上書きするのを防ぐ）
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      # 検証（壊れたビルドを Pages に送らない）
+      - run: pnpm typecheck
+      - run: pnpm lint
+      - run: pnpm test:unit
+
+      # 静的 export ビルド。NEXT_PUBLIC_AUTH_* は Repository Secrets で渡す。
+      # NEXT_PUBLIC_BASE_PATH 未設定なら next.config.ts のデフォルト ('/MoneyJimuNeko') が効く。
+      - run: pnpm build
+        env:
+          NODE_ENV: production
+          NEXT_PUBLIC_AUTH_HASH: ${{ secrets.AUTH_HASH }}
+          NEXT_PUBLIC_AUTH_SALT: ${{ secrets.AUTH_SALT }}
+          NEXT_PUBLIC_BASE_PATH: ${{ vars.BASE_PATH }}
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: out
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
